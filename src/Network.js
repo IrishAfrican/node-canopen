@@ -52,6 +52,10 @@ class Network extends EventEmitter {
         this.devices[deviceId] = undefined;
     }
 
+    getDevice(deviceId) {
+        return this.devices[deviceId];
+    }
+
     /** socketcan 'onMessage' listener.
      * @private
      * @param {Object} message - CAN frame.
