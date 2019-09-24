@@ -63,38 +63,41 @@ class Network extends EventEmitter {
     _onMessage(message) {
         if(!message)
             return;
-        
-        if(message.id == 0x0) {
-            const target = message.data[1];
-            let state;
 
-            switch(message.data[0]) {
-                case this.NMT.commands.ENTER_OPERATIONAL:
-                    state = this.NMT.states.OPERATIONAL;
-                    break;
-                case this.NMT.commands.ENTER_STOPPED:
-                    state = this.NMT.states.STOPPED;
-                    break;
-                case this.NMT.commands.ENTER_PRE_OPERATIONAL:
-                    state = this.NMT.states.PRE_OPERATIONAL;
-                    break;
-                case this.NMT.commands.RESET_NODE:
-                case this.NMT.commands.RESET_COMMUNICATION:
-                    state = this.NMT.states.INITIALIZING;
-                    break;
-            }
+        // prevent illegal canopen message from crashing server
+        try {
+            if (message.id == 0x0) {
+                const target = message.data[1];
+                let state;
 
-            if(target == 0) {
-                for (const id in this.devices)
-                    this.devices[id].state = state;
+                switch (message.data[0]) {
+                    case this.NMT.commands.ENTER_OPERATIONAL:
+                        state = this.NMT.states.OPERATIONAL;
+                        break;
+                    case this.NMT.commands.ENTER_STOPPED:
+                        state = this.NMT.states.STOPPED;
+                        break;
+                    case this.NMT.commands.ENTER_PRE_OPERATIONAL:
+                        state = this.NMT.states.PRE_OPERATIONAL;
+                        break;
+                    case this.NMT.commands.RESET_NODE:
+                    case this.NMT.commands.RESET_COMMUNICATION:
+                        state = this.NMT.states.INITIALIZING;
+                        break;
+                }
+
+                if (target == 0) {
+                    for (const id in this.devices)
+                        this.devices[id].state = state;
+                } else {
+                    this.devices[target].state = state;
+                }
+            } else if ((message.id & 0x7F0) == 0x80) {
+                const deviceId = (message.id & 0x00F);
+                this.emit('Emergency', deviceId, EMCY._process(message));
             }
-            else {
-                this.devices[target].state = state;
-            }
-        }
-        else if((message.id & 0x7F0) == 0x80) {
-            const deviceId = (message.id & 0x00F);
-            this.emit('Emergency', deviceId, EMCY._process(message));
+        } catch (e) {
+            // no-op
         }
     }
 }
