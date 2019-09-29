@@ -396,7 +396,17 @@ class Device extends EventEmitter {
             case dataTypes.UNSIGNED16:
             case dataTypes.INTEGER32:
             case dataTypes.UNSIGNED32:
-                return data ? parseInt(data) : 0;
+                let val = parseInt(data);
+                if (isNaN(val)) {
+                    if (data.includes('$NODEID+') && data.length === 13) {
+                        const baseCobId =  parseInt(data.substring(8,12));
+                        return (baseCobId + this.deviceId).toString(16);
+                    } else {
+                        return val;
+                    }
+                } else {
+                    return data ? val : 0;
+                }
             case dataTypes.REAL32:
             case dataTypes.REAL64:
                 return data ? parseFloat(data) : 0.0;
