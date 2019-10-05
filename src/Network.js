@@ -43,8 +43,8 @@ class Network extends EventEmitter {
         return this._Time;
     }
 
-    addDevice(deviceId, edsPath=null, heartbeat=false) {
-        this.devices[deviceId] = new Device(this.channel, deviceId, edsPath, heartbeat);
+    addDevice(deviceId, edsPath=null, heartbeat=false, pdoCallback=null) {
+        this.devices[deviceId] = new Device(this.channel, deviceId, edsPath, heartbeat, pdoCallback);
         return this.devices[deviceId];
     }
 

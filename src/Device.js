@@ -62,9 +62,10 @@ const objectTypes = {
  * @param {number} deviceId - device identifier.
  * @param {string | null} edsPath - path to the device's electronic data sheet.
  * @param {boolean} heartbeat - enable heartbeat production.
+ * @param {Function} pdoCallback - callback when a PDO changes (deviceId, index, subIndex, value)
  */
 class Device extends EventEmitter {
-    constructor(channel, deviceId, edsPath=null, heartbeat=false) {
+    constructor(channel, deviceId, edsPath=null, heartbeat=false, pdoCallback= null) {
         if(channel == undefined)
             throw ReferenceError("arg0 'channel' undefined");
 
@@ -150,6 +151,10 @@ class Device extends EventEmitter {
             if(heartbeat) {
                 this.startHeartbeat();
             }
+        }
+
+        if (pdoCallback) {
+            this.pdoCallback = pdoCallback;
         }
     }
 

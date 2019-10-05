@@ -120,7 +120,7 @@ class PDO {
         }
     }
 
-    /** Parse a CANopen Emergency message.
+    /** Process a recived CANopen PDO message.
      * @private
      * @param {Object} message - CAN frame to parse.
      */
@@ -151,6 +151,9 @@ class PDO {
                     entry.data[subIndex].value = value;
                     entry.data[subIndex].raw = raw;
                     updated.push(entry);
+                    if (this.device.pdoCallback) {
+                        this.device.pdoCallback(this.device.deviceId, map[i].index, subIndex, value);
+                    }
                 }
             }
         }
