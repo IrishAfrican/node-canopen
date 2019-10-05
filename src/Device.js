@@ -404,7 +404,7 @@ class Device extends EventEmitter {
                 let val = parseInt(data);
                 if (isNaN(val)) {
                     if (data.includes('$NODEID+') && data.length === 13) {
-                        const baseCobId =  parseInt(data.substring(8,12));
+                        const baseCobId =  parseInt(data.substring(8,13));
                         return (baseCobId + this.deviceId).toString(16);
                     } else {
                         return val;
