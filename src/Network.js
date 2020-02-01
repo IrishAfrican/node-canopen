@@ -4,6 +4,7 @@ const Device = require('./Device');
 const EMCY = require('./protocol/EMCY');
 const NMT = require('./protocol/NMT');
 const Sync = require('./protocol/Sync');
+const LSS_x = require('./protocol/LSS_x');
 
 /** A CANopen network.
  *
@@ -16,13 +17,13 @@ const Sync = require('./protocol/Sync');
  */
 class Network extends EventEmitter {
     constructor(channel) {
-        if(channel == undefined)
+        if (channel === undefined)
             throw ReferenceError("arg0 'channel' undefined");
 
-        if(channel.send == undefined)
+        if (channel.send === undefined)
             throw ReferenceError("arg0 'channel' has no send method");
 
-        if(channel.addListener == undefined)
+        if (channel.addListener === undefined)
             throw ReferenceError("arg0 'channel' has no addListener method");
 
         super();
@@ -31,6 +32,7 @@ class Network extends EventEmitter {
 
         this._NMT = new NMT(channel);
         this._Sync = new Sync(channel);
+        this._LSS_x = new LSS_x(channel);
 
         channel.addListener("onMessage", this._onMessage, this);
     }
@@ -41,6 +43,10 @@ class Network extends EventEmitter {
 
     get Sync() {
         return this._Sync;
+    }
+
+    get LSS_x() {
+        return this._LSS_x;
     }
 
     addDevice(deviceId, edsPath=null, heartbeat=false, pdoCallback=null) {
@@ -66,7 +72,7 @@ class Network extends EventEmitter {
 
         // prevent illegal canopen message from crashing server
         try {
-            if (message.id == 0x0) {
+            if (message.id === 0x0) {
                 const target = message.data[1];
                 let state;
 
@@ -86,7 +92,7 @@ class Network extends EventEmitter {
                         break;
                 }
 
-                if (target == 0) {
+                if (target === 0) {
                     for (const id in this.devices)
                         this.devices[id].state = state;
                 } else {
@@ -94,7 +100,7 @@ class Network extends EventEmitter {
                         this.devices[target].state = state;
                     }
                 }
-            } else if ((message.id & 0x7F0) == 0x80) {
+            } else if ((message.id & 0x7F0) === 0x80) {
                 const deviceId = (message.id & 0x00F);
                 this.emit('Emergency', deviceId, EMCY.receive(message));
             }

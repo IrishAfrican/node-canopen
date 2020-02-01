@@ -450,7 +450,7 @@ class Device extends EventEmitter {
                     this.SDO.serverReceive(message);
                     break;
                 case 0x700:
-                    if(this.state != message.data[0]) {
+                    if(this.state !== message.data[0]) {
                         this.emit("HB", {
                             "old" : this.state,
                             "new" : message.data[0]
