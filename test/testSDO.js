@@ -1,179 +1,151 @@
 const canopen = require('../index');
 const VirtualChannel = require('./common/VirtualChannel.js');
-const assert = require('assert');
+const chai = require('chai')
+    .use(require('chai-as-promised'))
+    .use(require('chai-bytes'));
 
-describe('SDO', () => {
+const expect = chai.expect;
+
+describe('SDO Protocol', function() {
     // Create an SDO client and server at deviceId 0xA
     const channel = new VirtualChannel();
     const client = new canopen.Device(channel, 0xA, './test/common/test.eds');
     const server = new canopen.Device(channel, 0xA, './test/common/test.eds');
 
-    // Start server
-    server.SDO.serverStart();
+    describe('Bad Input', function() {
+        it("should reject bad download index", function() {
+            return expect(client.SDO.download(-1)).to.be.rejected;
+        });
 
-    it("Expedited Upload", (done) => {
+        it("should reject bad download subindex", function() {
+            return expect(client.SDO.download(0x1006, -1)).to.be.rejected;
+        });
 
-        // Using entry [1006] "Communication cycle period" (UNSIGNED32)
-        const targetIndex = 0x1006;
+        it("should reject bad download timeout", function() {
+            return expect(client.SDO.download(0x1006, 0, -1)).to.be.rejected;
+        });
 
-        client.setValue(targetIndex, 0, 0xdecaf);
-        server.setValue(targetIndex, 0, 0xc0ffee);
+        it("should reject bad upload index", function() {
+            return expect(client.SDO.upload(-1)).to.be.rejected;
+        });
 
-        function check() {
-            const clientValue = client.getValue(targetIndex, 0);
-            const serverValue = server.getValue(targetIndex, 0);
-            assert.strictEqual(clientValue, serverValue, `${clientValue.toString(16)} == ${serverValue.toString(16)}`);
-            done();
-        }
+        it("should reject bad upload subindex", function() {
+            return expect(client.SDO.upload(0x1006, -1)).to.be.rejected;
+        });
 
-        client.SDO
-            .upload(targetIndex)
-            .then(check, done)
-            .catch(done);
+        it("should reject bad upload timeout", function() {
+            return expect(client.SDO.upload(0x1006, 0, -1)).to.be.rejected;
+        });
     });
 
-    it("Expedited Download", (done) => {
+    describe('Expedited Transfer', function() {
+        before(function() { server.SDO.serverStart() });
+        after(function() { server.SDO.serverStop() });
 
-        // Using entry [1006] "Communication cycle period" (UNSIGNED32)
-        const targetIndex = 0x1006;
+        const testValues = {
+            "BOOLEAN" : [true, false],
+            "INTEGER8" : [0xab, 0xcd],
+            "INTEGER16" : [0x1234, 0xabcd],
+            "INTEGER24" : [0x123456, 0xabcdef],
+            "INTEGER32" : [0xdecaf, 0xc0ffee],
+            "UNSIGNED8" : [0xab, 0xcd],
+            "UNSIGNED16" : [0x1234, 0xabcd],
+            "UNSIGNED24" : [0x123456, 0xabcdef],
+            "UNSIGNED32" : [0xdecaf, 0xc0ffee],
+            "TIME_OF_DAY" : [0, (Date.now() >>> 0)],
+            "TIME_DIFFERENCE" : [0, (Date.now() >>> 0)],
+        };
 
-        client.setValue(targetIndex, 0, 0xdecaf);
-        server.setValue(targetIndex, 0, 0xc0ffee);
+        Object.keys(testValues).forEach(function(key) {
+            it("should upload " + key, function() {
+                client.setValue(key, 0, testValues[key][0]);
+                server.setValue(key, 0, testValues[key][1]);
 
-        function check() {
-            const clientValue = client.getValue(targetIndex, 0);
-            const serverValue = server.getValue(targetIndex, 0);
-            assert.strictEqual(clientValue, serverValue, `${clientValue.toString(16)} == ${serverValue.toString(16)}`);
-            done();
-        }
+                return client.SDO.upload(key).then(() => {
+                    const clientValue = client.getRaw(key, 0);
+                    const serverValue = server.getRaw(key, 0);
+                    expect(clientValue).to.equalBytes(serverValue);
+                });
+            });
 
-        client.SDO
-            .download(targetIndex)
-            .then(check, done)
-            .catch(done);
+            it("should download " + key, function() {
+                client.setValue(key, 0, testValues[key][0]);
+                server.setValue(key, 0, testValues[key][1]);
+
+                return client.SDO.download(key).then(() => {
+                    const clientValue = client.getRaw(key, 0);
+                    const serverValue = server.getRaw(key, 0);
+                    expect(serverValue).to.equalBytes(clientValue);
+                });
+            });
+        });
     });
 
-    it("Segmented Upload", (done) => {
+    describe("Segmented Transfer", function() {
+        before(function() { server.SDO.serverStart() });
+        after(function() { server.SDO.serverStop() });
 
-        // Using entry [1008] "Manufacturer device name" (string)
-        const targetIndex = 0x1008;
+        const testValues = {
+            "INTEGER40" : [0xdecaf, 0xc0ffee],
+            "INTEGER48" : [0xdecaf, 0xc0ffee],
+            "INTEGER56" : [0xdecaf, 0xc0ffee],
+            "INTEGER64" : [0xdecaf, 0xc0ffee],
+            "UNSIGNED40" : [0xdecaf, 0xc0ffee],
+            "UNSIGNED48" : [0xdecaf, 0xc0ffee],
+            "UNSIGNED56" : [0xdecaf, 0xc0ffee],
+            "UNSIGNED64" : [0xdecaf, 0xc0ffee],
+            "REAL32" : [3.14159, 2.71828],
+            "REAL64" : [3.14159, 2.71828],
+            "VISIBLE_STRING" : ["CLIENT", "SERVER"],
+            "OCTET_STRING" : ["12345678", "87654321"],
+            "UNICODE_STRING" : ["\u03b1\u03b2\u03b3", "\u03b4\u03b5\u03b6"],
+        };
 
-        client.setValue(targetIndex, 0, "decaf");
-        server.setValue(targetIndex, 0, "coffee");
+        Object.keys(testValues).forEach(function(key) {
+            it("should upload " + key, function() {
+                client.setValue(key, 0, testValues[key][0]);
+                server.setValue(key, 0, testValues[key][1]);
 
-        function check() {
-            const clientValue = client.getValue(targetIndex, 0);
-            const serverValue = server.getValue(targetIndex, 0);
-            assert.strictEqual(clientValue, serverValue, `${clientValue.toString(16)} == ${serverValue.toString(16)}`);
-            done();
-        }
+                return client.SDO.upload(key).then(() => {
+                    const clientValue = client.getRaw(key, 0);
+                    const serverValue = server.getRaw(key, 0);
+                    expect(clientValue).to.equalBytes(serverValue);
+                });
+            });
 
-        client.SDO
-            .upload(targetIndex)
-            .then(check, done)
-            .catch(done);
+            it("should download " + key, function() {
+                client.setValue(key, 0, testValues[key][0]);
+                server.setValue(key, 0, testValues[key][1]);
+
+                return client.SDO.download(key).then(() => {
+                    const clientValue = client.getRaw(key, 0);
+                    const serverValue = server.getRaw(key, 0);
+                    expect(serverValue).to.equalBytes(clientValue);
+                });
+            });
+        });
     });
 
-    it("Segmented Download", (done) => {
+    describe('Timeout', function() {
+        it("should reject download after timeout", function() {
+            return expect(client.SDO.download(0x1006, 0, 10)).to.be.rejected;
+        });
 
-        // Using entry [1008] "Manufacturer device name" (string)
-        const targetIndex = 0x1008;
-
-        client.setValue(targetIndex, 0, "decaf");
-        server.setValue(targetIndex, 0, "coffee");
-
-        function check() {
-            const clientValue = client.getValue(targetIndex, 0);
-            const serverValue = server.getValue(targetIndex, 0);
-            assert.strictEqual(clientValue, serverValue, `${clientValue.toString(16)} == ${serverValue.toString(16)}`);
-            done();
-        }
-
-        // Start client download
-        client.SDO
-            .download(targetIndex)
-            .then(check, done)
-            .catch(done);
+        it("should reject upload after timeout", function() {
+            return expect(client.SDO.upload(0x1006, 0, 10)).to.be.rejected;
+        });
     });
 
-    const testValues = {
-        // Basic
-        BOOLEAN:    true,
-        INTEGER8:   -0x11,
-        INTEGER16:  -0x1122,
-        INTEGER32:  -0x11223344,
-        UNSIGNED8:  0x11,
-        UNSIGNED16: 0x1122,
-        UNSIGNED32: 0x11223344,
-        REAL32:     1.0,
-        REAL64:     1.0,
+    describe('Queue Overflow', function() {
+        before(function() { client.SDO.queue_size = 0; });
+        after(function() { client.SDO.queue_size = Infinity });
 
-        // Strings
-        VISIBLE_STRING: "VISIBLE_STRING",
-        OCTET_STRING: "12345678",
-        UNICODE_STRING: "\u03b1\u03b2\u03b3",
+        it("should reject upload after queue overflow", function() {
+            return expect(client.SDO.upload(0x1006)).to.be.rejected;
+        });
 
-        // Timestamp - 32 bit
-        TIME_OF_DAY: (Date.now() >>> 0),
-        TIME_DIFFERENCE: (Date.now() >>> 0),
-    };
-
-    it("Generic Data Upload", (done) => {
-
-        const transfers = [];
-        for(const name of Object.keys(client.dataTypes)) {
-            const testValue = testValues[name];
-            if(testValue == undefined)
-                continue;
-
-            /* jshint ignore:start */
-            function check() {
-                const clientValue = client.getValue(name, 0);
-                const serverValue = server.getValue(name, 0);
-                assert.strictEqual(clientValue, serverValue, `${name}: '${clientValue}' == '${serverValue}'`);
-            }
-            /* jshint ignore:end */
-
-            client.setValue(name, 0, null);
-            server.setValue(name, 0, testValue);
-            transfers.push(client.SDO.upload(name).then(check));
-        }
-
-        Promise
-            .all(transfers)
-            .then(
-                ( ) => { done(); },
-                (e) => { done(e); }
-            );
-    });
-
-    it("Generic Data Download", (done) => {
-
-        const transfers = [];
-        for(const name of Object.keys(client.dataTypes)) {
-            const testValue = testValues[name];
-            if(testValue == undefined)
-                continue;
-
-            /* jshint ignore:start */
-            function check() {
-                const clientValue = client.getValue(name, 0);
-                const serverValue = server.getValue(name, 0);
-                assert.strictEqual(clientValue, serverValue, `${name}: '${clientValue}' == '${serverValue}'`);
-            }
-            /* jshint ignore:end */
-
-            client.setValue(name, 0, testValue);
-            server.setValue(name, 0, null);
-            transfers.push(client.SDO.download(name).then(check));
-        }
-
-        Promise
-            .all(transfers)
-            .then(
-                ( ) => { done(); },
-                (e) => { done(e); }
-            )
-            .catch(done);
+        it("should reject download after queue overflow", function() {
+            return expect(client.SDO.download(0x1006)).to.be.rejected;
+        });
     });
 });

@@ -1,5 +1,9 @@
 /** CANopen Sync producer.
+ *
+ * This class provides methods for generating the Sync signal.
+ *
  * @param {RawChannel} channel - socketcan RawChannel object.
+ * @see CiA301 "Synchronization object (SYNC)" (§7.2.5)
  */
 class Sync {
     constructor(channel, syncId=0x80) {
@@ -23,7 +27,7 @@ class Sync {
     }
 
     /** Start serving Sync objects.
-     * 
+     *
      * @param {number} syncTime - milliseconds between Sync objects.
      */
     start(syncTime) {

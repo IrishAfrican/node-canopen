@@ -24,7 +24,11 @@ const commands = {
  };
 
 /** CANopen NMT protocol handler.
+ *
+ * This class provides methods for generating NMT protocol messages.
+ *
  * @param {RawChannel} channel - socketcan RawChannel object.
+ * @see CiA301 "Network management" (§7.2.8)
  */
 class NMT {
     constructor(channel) {
