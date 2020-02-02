@@ -67,7 +67,7 @@ describe('Device', function() {
 
         for(const [name, type] of Object.entries(device.dataTypes)) {
             const testValue = testValues[name];
-            if(testValue == undefined)
+            if (testValue === undefined)
                 continue;
 
             const raw = device.typeToRaw(testValue, type);

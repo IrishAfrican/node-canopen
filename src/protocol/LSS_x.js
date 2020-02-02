@@ -67,7 +67,7 @@ class LSS_x {
 		buf[6] = serialNoBytes[2]; // 0x51;
 		buf[7] = serialNoBytes[3]; // 0x15;
 
-		let message = {
+		const message = {
 			id: 0x000007E5,
 			length: 8,
 			data: buf,

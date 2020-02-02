@@ -76,16 +76,16 @@ const objectTypes = {
  */
 class Device extends EventEmitter {
     constructor(channel, deviceId, edsPath=null, heartbeat=false, pdoCallback= null) {
-        if(channel == undefined)
+        if (channel === undefined)
             throw ReferenceError("arg0 'channel' undefined");
 
-        if(channel.send == undefined)
+        if (channel.send === undefined)
             throw ReferenceError("arg0 'channel' has no send method");
 
-        if(channel.addListener == undefined)
+        if (channel.addListener === undefined)
             throw ReferenceError("arg0 'channel' has no addListener method");
 
-        if(!deviceId || deviceId > 0x7F)
+        if (!deviceId || deviceId > 0x7F)
             throw RangeError("ID must be in range 1-127");
 
         super();
@@ -101,17 +101,17 @@ class Device extends EventEmitter {
 
         channel.addListener("onMessage", this._onMessage, this);
 
-        if(edsPath) {
+        if (edsPath) {
             const objDict = ini.parse(fs.readFileSync(edsPath, 'utf-8'));
             const indexMatch = RegExp('^[0-9A-Fa-f]{4}$');
             const subIndexMatch = RegExp('^([0-9A-Fa-f]{4})sub([0-9A-Fa-f]+)$');
 
-            for(const [section, entry] of Object.entries(objDict)) {
-                if(indexMatch.test(section)) {
+            for (const [section, entry] of Object.entries(objDict)) {
+                if (indexMatch.test(section)) {
                     const objectType = parseInt(entry.ObjectType);
                     let data = [];
 
-                    if(objectType != objectTypes.ARRAY && objectType != objectTypes.RECORD) {
+                    if (objectType !== objectTypes.ARRAY && objectType !== objectTypes.RECORD) {
                         const dataType = parseInt(entry.DataType);
                         const value = this._parseTypedString(entry.DefaultValue, dataType);
                         const raw = this.typeToRaw(value, dataType);
@@ -140,7 +140,7 @@ class Device extends EventEmitter {
                         this.nameLookup[entry.ParameterName] = [this.dataObjects[index]];
                     }
                 }
-                else if(subIndexMatch.test(section)) {
+                else if (subIndexMatch.test(section)) {
                     const [main, sub] = section.split('sub');
                     const dataType = parseInt(entry.DataType);
                     const value = this._parseTypedString(entry.DefaultValue, dataType);
@@ -184,8 +184,7 @@ class Device extends EventEmitter {
         return objectTypes;
     }
 
-    startHeartbeat()
-    {
+    startHeartbeat() {
         const heartbeatTime = this.getValue(0x1017, 0);
         if(heartbeatTime > 0) {
             this.heartbeatTimer = setInterval(
@@ -193,8 +192,7 @@ class Device extends EventEmitter {
         }
     }
 
-    stopHeartbeat()
-    {
+    stopHeartbeat() {
         clearInterval(this.heartbeatTimer);
     }
 
@@ -203,10 +201,10 @@ class Device extends EventEmitter {
      */
     getEntry(index) {
         let entry = this.dataObjects[index];
-        if(entry == undefined)
+        if (entry === undefined)
         {
             entry = this.nameLookup[index];
-            if(entry && entry.length == 1)
+            if(entry && entry.length === 1)
                 entry = entry[0];
         }
 
@@ -237,6 +235,8 @@ class Device extends EventEmitter {
 
     /** Set the value of a dataObject.
      * @param {number | string} index - index or name of the dataObject.
+     * @param subIndex
+     * @param value
      */
     setValue(index, subIndex, value) {
         const entry = this.getEntry(index);
@@ -260,6 +260,8 @@ class Device extends EventEmitter {
 
     /** Set the raw value of a dataObject.
      * @param {number | string} index - index or name of the dataObject.
+     * @param subIndex
+     * @param raw
      */
     setRaw(index, subIndex, raw) {
         const entry = this.getEntry(index);
@@ -285,7 +287,7 @@ class Device extends EventEmitter {
     rawToType(raw, dataType) {
         switch(dataType) {
             case dataTypes.BOOLEAN:
-                return raw[0] != 0;
+                return raw[0] !== 0;
             case dataTypes.INTEGER8:
                 return raw.readInt8(0);
             case dataTypes.INTEGER16:
@@ -402,7 +404,7 @@ class Device extends EventEmitter {
     _parseTypedString(data, dataType) {
         switch(dataType) {
             case dataTypes.BOOLEAN:
-                return data ? (parseInt(data) != 0) : false;
+                return data ? (parseInt(data) !== 0) : false;
             case dataTypes.INTEGER8:
             case dataTypes.UNSIGNED8:
             case dataTypes.INTEGER16:
