@@ -128,4 +128,4 @@ class LSS_x {
 	// }
 }
 
-module.exports.LSS_x = LSS_x;
+module.exports=exports=LSS_x;
