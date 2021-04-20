@@ -326,8 +326,13 @@ class Sdo {
         this.transfers = {};
     }
 
-    /** Initialize members and begin serving SDO transfers. */
     init() {
+        this.load();
+        this.device.addListener('message', this._onMessage.bind(this));
+    }
+
+    /** Initialize members and begin serving SDO transfers. */
+    load() {
         for(let [index, entry] of Object.entries(this.device.dataObjects)) {
             index = parseInt(index);
             if(0x1200 <= index && index < 0x1280) {
@@ -426,8 +431,6 @@ class Sdo {
                 };
             }
         }
-
-        this.device.addListener('message', this._onMessage.bind(this));
     }
 
     /**
