@@ -34,6 +34,8 @@ class LssError extends Error {
  * @see CiA305 "Layer Settings Services and Protocol (LSS)"
  */
 class Lss {
+    
+    
     constructor(device) {
         this.device = device;
         this.mode = LssMode.OPERATION;
@@ -107,16 +109,23 @@ class Lss {
         // Initiate fastscan
         await new Promise((resolve) => {
             const timer = setTimeout(() => {
-                timeoutFlag = true;
-                resolve();
+                if (this.pending[0x4f].received !== true) {
+                    timeoutFlag = true;
+                    resolve();
+                } else {
+                    resolve(this.pending[0x4f].data.slice(1));
+                }
             }, timeout);
+            // console.log('Initiate fastscan');
+            this.pending[0x4f] = {resolve, timer, received: false};
 
-            this._sendLssRequest(81, Buffer.from([0, 0, 0, 0, 0x80]));
-            this.pending[0x4f] = {resolve, timer};
+            this._sendLssRequest(81, Buffer.from([0, 0, 0, 0, 0x80, 0, 0]));
         });
 
-        if(timeoutFlag)
+        if(timeoutFlag) {
+            // console.log('Timeout No Devices');
             return null; // No devices
+        }
 
         // Find vendor-id
         if(vendorId === null) {
@@ -124,8 +133,12 @@ class Lss {
             for(let i = 31; i >= 0; --i) {
                 await new Promise((resolve) => {
                     const timer = setTimeout(() => {
-                        vendorId |= 1 << i;
-                        resolve();
+                        if (this.pending[0x4f].received !== true) {
+                            vendorId |= 1 << i;
+                            resolve();
+                        } else {
+                            resolve(this.pending[0x4f].data.slice(1));
+                        }
                     }, timeout);
 
                     const data = Buffer.alloc(7);
@@ -133,17 +146,21 @@ class Lss {
                     data[4] = i; // Bit checked
                     data[5] = 0; // LSS sub
                     data[6] = (i > 0) ? 0 : 1; // LSS next
-                    this._sendLssRequest(81, data);
+                    this.pending[0x4f] = {resolve, timer, received: false};
 
-                    this.pending[0x4f] = {resolve, timer};
+                    this._sendLssRequest(81, data);
                 });
             }
         }
-
+        
         // Verify vendor-id
         await new Promise((resolve, reject) => {
             const timer = setTimeout(() => {
-                reject('Failed to verify vendorId');
+                if (this.pending[0x4f].received !== true) {     
+                    reject('Failed to verify vendorId');
+                } else {
+                    resolve(this.pending[0x4f].data.slice(1));
+                }
             }, timeout);
 
             const data = Buffer.alloc(7);
@@ -151,9 +168,9 @@ class Lss {
             data[4] = 0; // Bit checked
             data[5] = 0; // LSS sub
             data[6] = 1; // LSS next
-            this._sendLssRequest(81, data);
+            this.pending[0x4f] = {resolve, timer, received: false};
 
-            this.pending[0x4f] = {resolve, timer};
+            this._sendLssRequest(81, data);
         });
 
         // Find product-code
@@ -162,8 +179,12 @@ class Lss {
             for(let i = 31; i >= 0; --i) {
                 await new Promise((resolve) => {
                     const timer = setTimeout(() => {
-                        productCode |= (1 << i);
-                        resolve();
+                        if (this.pending[0x4f].received !== true) {
+                            productCode |= (1 << i);
+                            resolve();
+                        } else {
+                            resolve(this.pending[0x4f].data.slice(1));
+                        }
                     }, timeout);
 
                     const data = Buffer.alloc(7);
@@ -171,9 +192,9 @@ class Lss {
                     data[4] = i; // Bit checked
                     data[5] = 1; // LSS sub
                     data[6] = 1; // LSS next
-                    this._sendLssRequest(81, data);
+                    this.pending[0x4f] = {resolve, timer, received: false};
 
-                    this.pending[0x4f] = {resolve, timer};
+                    this._sendLssRequest(81, data);
                 });
             }
         }
@@ -181,7 +202,11 @@ class Lss {
         // Verify product-code
         await new Promise((resolve, reject) => {
             const timer = setTimeout(() => {
-                reject('Failed to verify productCode');
+                if (this.pending[0x4f].received !== true) {
+                    reject('Failed to verify productCode');
+                } else {
+                    resolve(this.pending[0x4f].data.slice(1));
+                }    
             }, timeout);
 
             const data = Buffer.alloc(7);
@@ -189,9 +214,9 @@ class Lss {
             data[4] = 0; // Bit checked
             data[5] = 1; // LSS sub
             data[6] = 2; // LSS next
-            this._sendLssRequest(81, data);
+            this.pending[0x4f] = {resolve, timer, received: false};
 
-            this.pending[0x4f] = {resolve, timer};
+            this._sendLssRequest(81, data);
         });
 
         // Find revision-number
@@ -200,8 +225,12 @@ class Lss {
             for(let i = 31; i >= 0; --i) {
                 await new Promise((resolve) => {
                     const timer = setTimeout(() => {
-                        revisionNumber |= 1 << i;
-                        resolve();
+                        if (this.pending[0x4f].received !== true) {
+                            revisionNumber |= 1 << i;
+                            resolve();
+                        } else {
+                            resolve(this.pending[0x4f].data.slice(1));
+                        }
                     }, timeout);
 
                     const data = Buffer.alloc(7);
@@ -209,9 +238,9 @@ class Lss {
                     data[4] = i; // Bit checked
                     data[5] = 2; // LSS sub
                     data[6] = (i > 0) ? 2 : 3; // LSS next
-                    this._sendLssRequest(81, data);
+                    this.pending[0x4f] = {resolve, timer, received: false};
 
-                    this.pending[0x4f] = {resolve, timer};
+                    this._sendLssRequest(81, data);
                 });
             }
         }
@@ -219,7 +248,11 @@ class Lss {
         // Verify revision-number
         await new Promise((resolve, reject) => {
             const timer = setTimeout(() => {
-                reject('Failed to verify revisionNumber');
+                if (this.pending[0x4f].received !== true) {
+                    reject('Failed to verify revisionNumber');
+                } else {
+                    resolve(this.pending[0x4f].data.slice(1));
+                }
             }, timeout);
 
             const data = Buffer.alloc(7);
@@ -227,9 +260,9 @@ class Lss {
             data[4] = 0; // Bit checked
             data[5] = 2; // LSS sub
             data[6] = 3; // LSS next
-            this._sendLssRequest(81, data);
+            this.pending[0x4f] = {resolve, timer, received: false};
 
-            this.pending[0x4f] = {resolve, timer};
+            this._sendLssRequest(81, data);
         });
 
         // Find serial-number
@@ -238,8 +271,12 @@ class Lss {
             for(let i = 31; i >= 0; --i) {
                 await new Promise((resolve) => {
                     const timer = setTimeout(() => {
-                        serialNumber |= 1 << i;
-                        resolve();
+                        if (this.pending[0x4f].received !== true) {
+                            serialNumber |= 1 << i;
+                            resolve();
+                        } else {
+                            resolve(this.pending[0x4f].data.slice(1));
+                        }
                     }, timeout);
 
                     const data = Buffer.alloc(7);
@@ -247,9 +284,9 @@ class Lss {
                     data[4] = i; // Bit checked
                     data[5] = 3; // LSS sub
                     data[6] = 3; // LSS next
-                    this._sendLssRequest(81, data);
+                    this.pending[0x4f] = {resolve, timer, received: false};
 
-                    this.pending[0x4f] = {resolve, timer};
+                    this._sendLssRequest(81, data);
                 });
             }
         }
@@ -257,7 +294,11 @@ class Lss {
         // Verify serial-number
         await new Promise((resolve, reject) => {
             const timer = setTimeout(() => {
-                reject('Failed to verify serialNumber');
+                if (this.pending[0x4f].received !== true) {
+                    reject('Failed to verify serialNumber');
+                } else {
+                    resolve(this.pending[0x4f].data.slice(1));
+                }
             }, timeout);
 
             const data = Buffer.alloc(7);
@@ -265,11 +306,11 @@ class Lss {
             data[4] = 0; // Bit checked
             data[5] = 3; // LSS sub
             data[6] = 0; // LSS next
+            this.pending[0x4f] = {resolve, timer, received: false};
+
             this._sendLssRequest(81, data);
-
-            this.pending[0x4f] = {resolve, timer};
         });
-
+        
         return { vendorId, productCode, revisionNumber, serialNumber };
     }
 
@@ -552,11 +593,16 @@ class Lss {
     _onMessage(message) {
         if(message.id != 0x7e4)
             return;
-
+        
         const cs = message.data[0];
         if(this.pending[cs]) {
-            clearTimeout(this.pending[cs].timer);
-            this.pending[cs].resolve(message.data.slice(1));
+            if (message.data[0] !== 0x4f) {
+                clearTimeout(this.pending[cs].timer);
+                this.pending[cs].resolve(message.data.slice(1));
+            } else {
+                this.pending[cs].received = true;
+                this.pending[cs].data = message.data.slice(1);
+            }
         }
     }
 }
