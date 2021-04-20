@@ -25,6 +25,7 @@ const { Eds } = require('./eds');
  * @emits 'nmtChangeState' on change of NMT state.
  * @emits 'nmtResetNode' on NMT reset node.
  * @emits 'nmtResetCommunication' on NMT reset communication.
+ * @emits 'nmtNewHeartbeat' on receiving a heartbeat from device with Id 0x7FF
  * @emits 'sync' on consuming a synchronization object.
  * @emits 'time' on consuming a time stamp object.
  * @emits 'pdo' on updating a mapped pdo object.

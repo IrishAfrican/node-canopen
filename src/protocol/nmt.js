@@ -96,18 +96,7 @@ class Nmt {
 
     /** Initialize members and begin heartbeat monitoring. */
     init() {
-        // Object 0x1016 - Consumer heartbeat time
-        const obj1016 = this.device.eds.getEntry(0x1016);
-        if(obj1016 !== undefined) {
-            for(let i = 1; i <= obj1016[0].value; ++i) {
-                const entry = obj1016[i];
-                if(entry === undefined)
-                    continue;
-
-                this._parse1016(entry);
-                entry.addListener('update', this._parse1016.bind(this));
-            }
-        }
+        this.load();
 
         // Object 0x1017 - Producer heartbeat time
         const obj1017 = this.device.eds.getEntry(0x1017);
@@ -117,6 +106,23 @@ class Nmt {
         }
 
         this.device.addListener('message', this._onMessage.bind(this));
+    }
+
+    load() {
+        // Object 0x1016 - Consumer heartbeat time
+        const obj1016 = this.device.eds.getEntry(0x1016);
+        if(obj1016 !== undefined) {
+            for(let i = 1; i <= obj1016[0].value; ++i) {
+                const entry = obj1016[i];
+                if(entry === undefined)
+                    continue;
+
+                this._parse1016(entry);
+
+                entry.removeListener('update', this._parse1016.bind(this));
+                entry.addListener('update', this._parse1016.bind(this));
+            }
+        }
     }
 
     /** Begin heartbeat generation. */
@@ -249,6 +255,9 @@ class Nmt {
             const nodeId = message.data[1];
             if(nodeId == 0 || nodeId == this.device.id)
                 this._handleNmt(message.data[0]);
+        }
+        else if (message.id & 0x7FF === 0x7FF) {
+            this.device.emit('nmtNewHeartbeat', message);
         }
         else if((message.id & 0x700) == 0x700) {
             const deviceId = message.id & 0x7F;
