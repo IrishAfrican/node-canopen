@@ -735,6 +735,10 @@ class Eds {
             .filter(([key, ]) => { return indexMatch.test(key); })
             .forEach(([key, value]) => {
                 const index = parseInt(key, 16);
+                if (value.DefaultValue && value.DefaultValue.toString().includes('$NODEID')) {
+                    const defaultValue = value.DefaultValue.replace('$NODEID', nodeId);
+                    value.DefaultValue = eval(defaultValue);
+                }
                 this.addEntry(index, value);
             });
 
