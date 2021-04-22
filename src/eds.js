@@ -712,7 +712,7 @@ class Eds {
      * Read and parse an EDS file.
      * @param {string} path - path to file.
      */
-    load(path) {
+    load(path, nodeId) {
         // Parse EDS file
         const file = ini.parse(fs.readFileSync(path, 'utf-8'));
 
@@ -731,16 +731,16 @@ class Eds {
         const indexMatch = RegExp('^[0-9A-Fa-f]{4}$');
         const subIndexMatch = RegExp('^([0-9A-Fa-f]{4})sub([0-9A-Fa-f]+)$');
 
-        entries
-            .filter(([key, ]) => { return indexMatch.test(key); })
-            .forEach(([key, value]) => {
-                const index = parseInt(key, 16);
-                if (value.DefaultValue && value.DefaultValue.toString().includes('$NODEID')) {
-                    const defaultValue = value.DefaultValue.replace('$NODEID', nodeId);
-                    value.DefaultValue = eval(defaultValue);
-                }
-                this.addEntry(index, value);
-            });
+      entries
+        .filter(([key, ]) => { return indexMatch.test(key); })
+        .forEach(([key, value]) => {
+          const index = parseInt(key, 16);
+          if (value.DefaultValue && value.DefaultValue.toString().includes('$NODEID')) {
+            const defaultValue = value.DefaultValue.replace('$NODEID', nodeId);
+            value.DefaultValue = eval(defaultValue);
+          }
+          this.addEntry(index, value);
+        });
 
         entries
             .filter(([key, ]) => { return subIndexMatch.test(key); })
