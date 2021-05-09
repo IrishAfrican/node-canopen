@@ -256,7 +256,7 @@ class Nmt {
             if(nodeId == 0 || nodeId == this.device.id)
                 this._handleNmt(message.data[0]);
         }
-        else if (message.id & 0x7FF === 0x7FF) {
+        else if ((message.id & 0x7FF) == 0x7FF) {
             this.device.emit('nmtNewHeartbeat', message);
         }
         else if((message.id & 0x700) == 0x700) {

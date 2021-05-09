@@ -4,7 +4,7 @@
  * @see CiA305 "Switch Mode Global" (§3.9.1)
  * @memberof Lss
  */
-const LssMode = {
+ const LssMode = {
     OPERATION: 0,
     CONFIGURATION: 1,
 }
@@ -590,13 +590,14 @@ class Lss {
      * @param {Object} message - CAN frame.
      * @private
      */
+
     _onMessage(message) {
         if(message.id != 0x7e4)
             return;
         
         const cs = message.data[0];
         if(this.pending[cs]) {
-            if (message.data[0] !== 0x4f) {
+            if (message.data[0] !== 0x4F) {
                 clearTimeout(this.pending[cs].timer);
                 this.pending[cs].resolve(message.data.slice(1));
             } else {

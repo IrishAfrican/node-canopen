@@ -231,10 +231,10 @@ class Sync {
         const rtr = (value >> 29) & 0x1;
         const cobId = value & 0x7FF;
 
-        if(rtr == 0x1)
+        if(rtr == 0x1 && gen)
             throw TypeError("CAN extended frames are not supported.")
 
-        if(cobId == 0)
+        if(cobId == 0 && gen)
             throw TypeError('COB-ID SYNC can not be 0.');
 
         this._generate = !!gen;
@@ -248,7 +248,7 @@ class Sync {
      */
     _parse1006(data) {
         const cyclePeriod = data.value;
-        if(cyclePeriod == 0)
+        if(cyclePeriod == 0 && this._generate)
             throw TypeError('Communication cycle period can not be 0.')
 
         this._cyclePeriod = cyclePeriod;
